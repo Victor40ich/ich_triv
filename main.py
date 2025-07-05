@@ -3,19 +3,21 @@ import requests
 from telegram import Bot
 from telegram.constants import ParseMode
 
-    # Токен твого Telegram-бота
+    # 🔐 Токен бота
 TOKEN = '7928801571:AAElQ_J6qieo6pvggLwinsZd4Q6YiFBpXOc'
 
-    # ID або username каналу
+    # 📢 Канал
 CHANNEL_ID = '@ichnya'
 
-    # ID області (Чернігівська)
-REGION_ID = 3
+    # 🌍 ID області (Чернігівська = 3)
+REGION_ID = 24
+
+    # 🎯 Стікери
+ALERT_STICKER = 'CAACAgIAAxkBAAEEGdM1r-TKqVLv4qMxkYv0NQ2f7m8PCAACXQADwZxgDlf5Wyy_NXUlMwQ'   # 🔴 Тривога
+CLEAR_STICKER = 'CAACAgIAAxkBAAEEGdM9r-UFqua3uLp9GcZT_1QGfCcV0gACXgADwZxgDrsE_vPBfPbZMwQ'  # 🟢 Відбій
 
 bot = Bot(token=TOKEN)
-
-    # Зберігаємо попередній стан
-previous_alert = None
+previous_alert = None  # Стартове значення
 
 async def check_alerts():
         global previous_alert
@@ -24,7 +26,8 @@ async def check_alerts():
         while True:
             try:
                 response = requests.get(url)
-                print(f"Status code: {response.status_code}")
+                print(f"[LOG] Статус запиту: {response.status_code}")
+
                 if response.status_code == 200:
                     data = response.json()
                     states = data.get("states", [])
@@ -33,23 +36,33 @@ async def check_alerts():
 
                     if region:
                         current_alert = region.get("alert", False)
+                        print(f"[DEBUG] Поточний: {current_alert}, Попередній: {previous_alert}")
 
-                        # Повідомляти тільки якщо стан змінився
                         if previous_alert is None:
-                            previous_alert = current_alert  # перший запуск — не надсилаємо
-                        elif current_alert != previous_alert:
+                            # 🟡 Перше повідомлення після запуску
                             previous_alert = current_alert
-                            message = "🚨 Повітряна тривога!" if current_alert else "✅ Відбій тривоги"
-                            print(f"Sending alert: {message}")
-                            await bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode=ParseMode.HTML)
+                            msg = "🚨 Тривога активна на момент запуску." if current_alert else "✅ Відбій тривоги на момент запуску."
+                            await bot.send_message(chat_id=CHANNEL_ID, text=f"▶️ Бот запущено\n{msg}")
+                        elif current_alert != previous_alert:
+                            # 🔄 Статус змінився
+                            previous_alert = current_alert
+                            if current_alert:
+                                await bot.send_sticker(chat_id=CHANNEL_ID, sticker=ALERT_STICKER)
+                                await bot.send_message(chat_id=CHANNEL_ID, text="🚨 Повітряна тривога в Чернігівській області!")
+                            else:
+                                await bot.send_sticker(chat_id=CHANNEL_ID, sticker=CLEAR_STICKER)
+                                await bot.send_message(chat_id=CHANNEL_ID, text="✅ Відбій повітряної тривоги.")
+                        else:
+                            print("[INFO] Стан не змінився.")
                     else:
-                        print(f"⚠️ Region with ID {REGION_ID} not found")
+                        print(f"[WARN] Область з ID {REGION_ID} не знайдена в API")
                 else:
-                    print(f"❌ Помилка при запиті: Status {response.status_code}")
-            except Exception as e:
-                print(f"❌ Помилка при запиті: {e}")
+                    print(f"[ERROR] Помилка HTTP: {response.status_code}")
 
-            await asyncio.sleep(60)  # перевіряємо кожні 60 секунд
+            except Exception as e:
+                print(f"[EXCEPTION] Виняток при запиті: {e}")
+
+            await asyncio.sleep(30)  # 🔁 Перевіряємо кожні 30 секунд
 
 async def main():
         await check_alerts()

@@ -12,10 +12,6 @@ CHANNEL_ID = '@ichnya'
     # 🌍 ID області (Чернігівська = 3)
 REGION_ID = 24
 
-    # 🎯 Стікери
-ALERT_STICKER = 'CAACAgIAAxkBAAEEGdM1r-TKqVLv4qMxkYv0NQ2f7m8PCAACXQADwZxgDlf5Wyy_NXUlMwQ'   # 🔴 Тривога
-CLEAR_STICKER = 'CAACAgIAAxkBAAEEGdM9r-UFqua3uLp9GcZT_1QGfCcV0gACXgADwZxgDrsE_vPBfPbZMwQ'  # 🟢 Відбій
-
 bot = Bot(token=TOKEN)
 previous_alert = None  # Стартове значення
 
@@ -47,10 +43,8 @@ async def check_alerts():
                             # 🔄 Статус змінився
                             previous_alert = current_alert
                             if current_alert:
-                                await bot.send_sticker(chat_id=CHANNEL_ID, sticker=ALERT_STICKER)
                                 await bot.send_message(chat_id=CHANNEL_ID, text="🚨 Повітряна тривога в Чернігівській області!")
                             else:
-                                await bot.send_sticker(chat_id=CHANNEL_ID, sticker=CLEAR_STICKER)
                                 await bot.send_message(chat_id=CHANNEL_ID, text="✅ Відбій повітряної тривоги.")
                         else:
                             print("[INFO] Стан не змінився.")
